@@ -1,24 +1,32 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { Text, ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import HomeScreen from './src/screens/HomeScreen';
 import LogScreen from './src/screens/LogScreen';
 import CourseScreen from './src/screens/CourseScreen';
 import CommunityScreen from './src/screens/CommunityScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import RunningScreen from './src/screens/RunningScreen';
+import LoginScreen from './src/screens/auth/LoginScreen';
+import SignupScreen from './src/screens/auth/SignupScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
   Running: undefined;
 };
 
-type RootTabParamList = {
+export type AuthStackParamList = {
+  Login: undefined;
+  Signup: undefined;
+};
+
+type TabParamList = {
   홈: undefined;
   기록: undefined;
   코스: undefined;
@@ -26,15 +34,12 @@ type RootTabParamList = {
   프로필: undefined;
 };
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator<RootTabParamList>();
+const RootStack = createNativeStackNavigator<RootStackParamList>();
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const Tab = createBottomTabNavigator<TabParamList>();
 
 const TAB_ICONS: Record<string, string> = {
-  홈: '🏠',
-  기록: '📋',
-  코스: '🗺️',
-  커뮤니티: '👥',
-  프로필: '👤',
+  홈: '🏠', 기록: '📋', 코스: '🗺️', 커뮤니티: '👥', 프로필: '👤',
 };
 
 function MainTabs() {
@@ -48,13 +53,7 @@ function MainTabs() {
         ),
         tabBarActiveTintColor: '#4CAF50',
         tabBarInactiveTintColor: '#AAAAAA',
-        tabBarStyle: {
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 4,
-          backgroundColor: '#FFFFFF',
-          borderTopColor: '#EFEFEF',
-        },
+        tabBarStyle: { height: 60, paddingBottom: 8, paddingTop: 4, backgroundColor: '#FFFFFF', borderTopColor: '#EFEFEF' },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
         headerShown: false,
       })}
@@ -68,20 +67,49 @@ function MainTabs() {
   );
 }
 
+function AuthNavigator() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Signup" component={SignupScreen} />
+    </AuthStack.Navigator>
+  );
+}
+
+function AppNavigator() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+      </View>
+    );
+  }
+
+  if (!user) return <AuthNavigator />;
+
+  return (
+    <RootStack.Navigator screenOptions={{ headerShown: false }}>
+      <RootStack.Screen name="MainTabs" component={MainTabs} />
+      <RootStack.Screen
+        name="Running"
+        component={RunningScreen}
+        options={{ presentation: 'fullScreenModal' }}
+      />
+    </RootStack.Navigator>
+  );
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen
-            name="Running"
-            component={RunningScreen}
-            options={{ presentation: 'fullScreenModal' }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <AuthProvider>
+        <NavigationContainer>
+          <AppNavigator />
+        </NavigationContainer>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
