@@ -1,0 +1,127 @@
+export const dummyPosts = [
+  {
+    id: '1',
+    user: '김달림',
+    avatar: 'https://i.pravatar.cc/50?img=1',
+    time: '30분 전',
+    distance: 5.2,
+    duration: '28:34',
+    pace: "5'29\"",
+    likes: 14,
+    comments: 3,
+    title: '한강 공원 아침 달리기',
+  },
+  {
+    id: '2',
+    user: '박조깅',
+    avatar: 'https://i.pravatar.cc/50?img=2',
+    time: '2시간 전',
+    distance: 10.0,
+    duration: '55:12',
+    pace: "5'31\"",
+    likes: 27,
+    comments: 8,
+    title: '10km 완주!',
+  },
+  {
+    id: '3',
+    user: '이런닝',
+    avatar: 'https://i.pravatar.cc/50?img=3',
+    time: '5시간 전',
+    distance: 3.1,
+    duration: '18:45',
+    pace: "6'03\"",
+    likes: 9,
+    comments: 1,
+    title: '퇴근 후 가볍게',
+  },
+];
+
+export const dummyLogs = [
+  { id: '1', date: '2026-05-20', distance: 5.2, duration: '28:34', pace: "5'29\"", calories: 312 },
+  { id: '2', date: '2026-05-18', distance: 8.0, duration: '44:10', pace: "5'31\"", calories: 480 },
+  { id: '3', date: '2026-05-16', distance: 3.5, duration: '21:00', pace: "6'00\"", calories: 210 },
+  { id: '4', date: '2026-05-14', distance: 10.0, duration: '55:12', pace: "5'31\"", calories: 600 },
+  { id: '5', date: '2026-05-11', distance: 6.3, duration: '36:00', pace: "5'42\"", calories: 378 },
+];
+
+export const dummyCourses = [
+  {
+    id: '1',
+    name: '한강 공원 코스',
+    distance: 5.0,
+    myBest: '27:10',
+    avgPace: "5'26\"",
+    runCount: 12,
+    participants: 348,
+  },
+  {
+    id: '2',
+    name: '남산 순환 코스',
+    distance: 7.2,
+    myBest: '41:30',
+    avgPace: "5'46\"",
+    runCount: 5,
+    participants: 215,
+  },
+  {
+    id: '3',
+    name: '올림픽공원 트랙',
+    distance: 3.0,
+    myBest: '16:55',
+    avgPace: "5'38\"",
+    runCount: 8,
+    participants: 192,
+  },
+];
+
+export const dummyCommunityPosts = [
+  {
+    id: '1',
+    category: '후기',
+    title: '첫 10km 완주 후기 🎉',
+    author: '달리기초보',
+    date: '2026-05-20',
+    likes: 42,
+    comments: 15,
+  },
+  {
+    id: '2',
+    category: '질문',
+    title: '무릎 통증 있을 때 어떻게 하세요?',
+    author: '런린이',
+    date: '2026-05-19',
+    likes: 18,
+    comments: 22,
+  },
+  {
+    id: '3',
+    category: '모임',
+    title: '한강 번개 달리기 같이 달리실 분!',
+    author: '한강러너',
+    date: '2026-05-19',
+    likes: 31,
+    comments: 9,
+  },
+  {
+    id: '4',
+    category: '장비',
+    title: '러닝화 추천 부탁드립니다',
+    author: '슈즈고민중',
+    date: '2026-05-18',
+    likes: 11,
+    comments: 28,
+  },
+];
+
+export const dummyProfile = {
+  name: '김달림',
+  avatar: 'https://i.pravatar.cc/100?img=5',
+  level: '중급 러너',
+  totalDistance: 312.5,
+  totalRuns: 58,
+  totalTime: '28h 44m',
+  monthlyDistance: 45.2,
+  monthlyRuns: 9,
+  badges: ['5km 완주', '10km 달성', '한달 연속', '새벽러너'],
+};
