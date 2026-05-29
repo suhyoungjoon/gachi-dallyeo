@@ -1,9 +1,18 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { CompositeScreenProps } from '@react-navigation/native';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../App';
 import { useAuth } from '../context/AuthContext';
 import { getMyProfile, updateMyName } from '../api/users';
 import { formatDuration } from '../hooks/useRunningTracker';
+
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<{ 홈: undefined; 기록: undefined; 코스: undefined; 커뮤니티: undefined; 프로필: undefined }, '프로필'>,
+  NativeStackScreenProps<RootStackParamList>
+>;
 
 interface ProfileData {
   user: { id: string; name: string; email: string; createdAt: string };
@@ -28,7 +37,7 @@ function getBadges(stats: ProfileData['stats']): string[] {
   return badges.length ? badges : ['첫 달리기'];
 }
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }: Props) {
   const { logout } = useAuth();
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,9 +105,14 @@ export default function ProfileScreen() {
             <Text style={styles.followLabel}>팔로잉</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.editButton} onPress={() => { setNewName(user?.name ?? ''); setEditModalVisible(true); }}>
-          <Text style={styles.editButtonText}>프로필 편집</Text>
-        </TouchableOpacity>
+        <View style={styles.actionRow}>
+          <TouchableOpacity style={styles.editButton} onPress={() => { setNewName(user?.name ?? ''); setEditModalVisible(true); }}>
+            <Text style={styles.editButtonText}>프로필 편집</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.findFriendButton} onPress={() => navigation.navigate('UserSearch')}>
+            <Text style={styles.findFriendButtonText}>👥 친구 찾기</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.totalStats}>
@@ -197,8 +211,11 @@ const styles = StyleSheet.create({
   followCount: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
   followLabel: { fontSize: 12, color: '#999' },
   followDivider: { width: 1, height: 30, backgroundColor: '#ECECEC' },
+  actionRow: { flexDirection: 'row', gap: 8 },
   editButton: { borderWidth: 1, borderColor: '#DDDDDD', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20 },
   editButtonText: { fontSize: 13, color: '#555', fontWeight: '500' },
+  findFriendButton: { backgroundColor: '#4CAF50', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  findFriendButtonText: { fontSize: 13, color: '#FFFFFF', fontWeight: '600' },
   totalStats: { flexDirection: 'row', backgroundColor: '#4CAF50', marginHorizontal: 16, marginTop: 16, borderRadius: 14, paddingVertical: 18, justifyContent: 'space-around' },
   totalStatItem: { alignItems: 'center' },
   totalStatValue: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },

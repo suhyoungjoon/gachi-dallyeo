@@ -85,7 +85,7 @@ router.delete('/:id/follow', authenticate, async (req: AuthRequest, res: Respons
   }
 });
 
-// 홈 피드 (팔로우한 사람들의 달리기 기록)
+// 홈 피드 (팔로우한 사람들의 달리기 기록, 없으면 전체 공개 피드)
 router.get('/feed', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const following = await prisma.follow.findMany({
@@ -94,8 +94,12 @@ router.get('/feed', authenticate, async (req: AuthRequest, res: Response): Promi
     });
     const followingIds = following.map((f) => f.followingId);
 
+    const whereClause = followingIds.length > 0
+      ? { userId: { in: followingIds } }
+      : { userId: { not: req.userId } };
+
     const runs = await prisma.run.findMany({
-      where: { userId: { in: followingIds } },
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
       take: 20,
       include: {
@@ -103,7 +107,7 @@ router.get('/feed', authenticate, async (req: AuthRequest, res: Response): Promi
         course: { select: { id: true, name: true } },
       },
     });
-    res.json({ runs });
+    res.json({ runs, isPublicFeed: followingIds.length === 0 });
   } catch {
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
   }

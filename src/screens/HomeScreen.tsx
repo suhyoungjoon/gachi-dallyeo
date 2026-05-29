@@ -27,6 +27,7 @@ function timeAgo(iso: string) {
 export default function HomeScreen({ navigation }: Props) {
   const { user } = useAuth();
   const [feedRuns, setFeedRuns] = useState<any[]>([]);
+  const [isPublicFeed, setIsPublicFeed] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -34,7 +35,8 @@ export default function HomeScreen({ navigation }: Props) {
   const loadData = useCallback(async () => {
     try {
       const [feed, myStats] = await Promise.all([getFeed(), getMyStats()]);
-      setFeedRuns(feed);
+      setFeedRuns(feed.runs);
+      setIsPublicFeed(feed.isPublicFeed);
       setStats(myStats);
     } catch {}
     finally { setLoading(false); setRefreshing(false); }
@@ -78,7 +80,23 @@ export default function HomeScreen({ navigation }: Props) {
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>팔로우 피드</Text>
+      <View style={styles.feedHeader}>
+        <Text style={styles.sectionTitle}>
+          {isPublicFeed ? '전체 러너 활동' : '팔로우 피드'}
+        </Text>
+        {isPublicFeed && (
+          <View style={styles.publicBadge}>
+            <Text style={styles.publicBadgeText}>전체 공개</Text>
+          </View>
+        )}
+      </View>
+      {isPublicFeed && (
+        <View style={styles.publicBanner}>
+          <Text style={styles.publicBannerText}>
+            👥 팔로우한 러너가 없어요. 다른 러너를 팔로우하면 맞춤 피드를 볼 수 있어요.
+          </Text>
+        </View>
+      )}
 
       {loading ? (
         <ActivityIndicator color="#4CAF50" style={{ marginTop: 20 }} />
@@ -136,7 +154,12 @@ const styles = StyleSheet.create({
   summaryItemValue: { color: '#FFFFFF', fontSize: 18, fontWeight: '600' },
   summaryItemLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
   summaryDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.3)' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginHorizontal: 16, marginBottom: 8, color: '#1A1A1A' },
+  feedHeader: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, gap: 8 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
+  publicBadge: { backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  publicBadgeText: { fontSize: 11, color: '#4CAF50', fontWeight: '600' },
+  publicBanner: { backgroundColor: '#F1F8F1', marginHorizontal: 16, marginBottom: 10, borderRadius: 10, padding: 12, borderLeftWidth: 3, borderLeftColor: '#4CAF50' },
+  publicBannerText: { fontSize: 13, color: '#555', lineHeight: 18 },
   emptyFeed: { alignItems: 'center', paddingVertical: 48 },
   emptyEmoji: { fontSize: 40, marginBottom: 10 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 6 },

@@ -18,6 +18,7 @@ import LoginScreen from './src/screens/auth/LoginScreen';
 import SignupScreen from './src/screens/auth/SignupScreen';
 import WritePostScreen from './src/screens/WritePostScreen';
 import PostDetailScreen from './src/screens/PostDetailScreen';
+import UserSearchScreen from './src/screens/UserSearchScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -25,6 +26,7 @@ export type RootStackParamList = {
   WritePost: undefined;
   PostDetail: { postId: string };
   CourseDetail: { courseId: string };
+  UserSearch: undefined;
 };
 
 export type AuthStackParamList = {
@@ -102,6 +104,7 @@ function AppNavigator() {
       <RootStack.Screen name="WritePost" component={WritePostScreen} options={{ presentation: 'modal' }} />
       <RootStack.Screen name="PostDetail" component={PostDetailScreen} />
       <RootStack.Screen name="CourseDetail" component={CourseDetailScreen} />
+      <RootStack.Screen name="UserSearch" component={UserSearchScreen} />
     </RootStack.Navigator>
   );
 }

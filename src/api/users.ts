@@ -7,7 +7,7 @@ export const updateMyName = (name: string) =>
   client.patch('/api/users/me', { name }).then((r) => r.data.user);
 
 export const getFeed = () =>
-  client.get('/api/users/feed').then((r) => r.data.runs);
+  client.get('/api/users/feed').then((r) => ({ runs: r.data.runs, isPublicFeed: r.data.isPublicFeed as boolean }));
 
 export const followUser = (id: string) =>
   client.post(`/api/users/${id}/follow`).then((r) => r.data);
