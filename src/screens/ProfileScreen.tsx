@@ -8,6 +8,7 @@ import { RootStackParamList } from '../../App';
 import { useAuth } from '../context/AuthContext';
 import { getMyProfile, updateMyName } from '../api/users';
 import { formatDuration } from '../hooks/useRunningTracker';
+import { getGoal, setGoal, GoalData } from '../api/goals';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<{ 홈: undefined; 기록: undefined; 코스: undefined; 커뮤니티: undefined; 프로필: undefined }, '프로필'>,
@@ -44,13 +45,18 @@ export default function ProfileScreen({ navigation }: Props) {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [newName, setNewName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [goalData, setGoalData] = useState<GoalData | null>(null);
+  const [goalModalVisible, setGoalModalVisible] = useState(false);
+  const [weeklyGoal, setWeeklyGoal] = useState('');
+  const [monthlyGoal, setMonthlyGoal] = useState('');
+  const [savingGoal, setSavingGoal] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       setLoading(true);
-      getMyProfile()
-        .then((d) => { if (active) setData(d); })
+      Promise.all([getMyProfile(), getGoal().catch(() => null)])
+        .then(([d, g]) => { if (active) { setData(d); setGoalData(g); } })
         .catch(() => {})
         .finally(() => { if (active) setLoading(false); });
       return () => { active = false; };
@@ -68,6 +74,23 @@ export default function ProfileScreen({ navigation }: Props) {
       Alert.alert('오류', '이름 변경에 실패했습니다.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveGoal = async () => {
+    const wk = parseFloat(weeklyGoal);
+    const mo = parseFloat(monthlyGoal);
+    if (!wk || !mo) { Alert.alert('알림', '주간/월간 목표를 모두 입력해주세요.'); return; }
+    setSavingGoal(true);
+    try {
+      await setGoal(wk, mo);
+      const updated = await getGoal().catch(() => null);
+      setGoalData(updated);
+      setGoalModalVisible(false);
+    } catch {
+      Alert.alert('오류', '목표 저장에 실패했습니다.');
+    } finally {
+      setSavingGoal(false);
     }
   };
 
@@ -159,6 +182,50 @@ export default function ProfileScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>달리기 목표</Text>
+          <TouchableOpacity onPress={() => {
+            setWeeklyGoal(goalData?.goal?.weeklyDistance?.toString() ?? '');
+            setMonthlyGoal(goalData?.goal?.monthlyDistance?.toString() ?? '');
+            setGoalModalVisible(true);
+          }}>
+            <Text style={styles.editLink}>{goalData?.goal ? '수정' : '설정'}</Text>
+          </TouchableOpacity>
+        </View>
+        {goalData?.goal ? (
+          <View style={styles.goalCard}>
+            <View style={styles.goalRow}>
+              <View style={styles.goalItem}>
+                <Text style={styles.goalLabel}>주간 목표</Text>
+                <Text style={styles.goalTarget}>{goalData.goal.weeklyDistance}km</Text>
+                <View style={styles.goalBarBg}>
+                  <View style={[styles.goalBarFill, {
+                    width: `${Math.min(100, (goalData.progress.weeklyDistance / goalData.goal.weeklyDistance) * 100)}%` as any,
+                  }]} />
+                </View>
+                <Text style={styles.goalProgress}>{goalData.progress.weeklyDistance.toFixed(1)}km 완료</Text>
+              </View>
+              <View style={styles.goalDivider} />
+              <View style={styles.goalItem}>
+                <Text style={styles.goalLabel}>월간 목표</Text>
+                <Text style={styles.goalTarget}>{goalData.goal.monthlyDistance}km</Text>
+                <View style={styles.goalBarBg}>
+                  <View style={[styles.goalBarFill, {
+                    width: `${Math.min(100, (goalData.progress.monthlyDistance / goalData.goal.monthlyDistance) * 100)}%` as any,
+                  }]} />
+                </View>
+                <Text style={styles.goalProgress}>{goalData.progress.monthlyDistance.toFixed(1)}km 완료</Text>
+              </View>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.goalEmpty} onPress={() => setGoalModalVisible(true)}>
+            <Text style={styles.goalEmptyText}>+ 달리기 목표를 설정해보세요</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>설정</Text>
         {['알림 설정', '개인정보 처리방침', '이용약관'].map((item) => (
           <TouchableOpacity key={item} style={styles.menuItem}>
@@ -171,6 +238,38 @@ export default function ProfileScreen({ navigation }: Props) {
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal visible={goalModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>달리기 목표 설정</Text>
+            <Text style={styles.goalInputLabel}>주간 목표 (km)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={weeklyGoal}
+              onChangeText={setWeeklyGoal}
+              placeholder="예: 20"
+              keyboardType="decimal-pad"
+            />
+            <Text style={styles.goalInputLabel}>월간 목표 (km)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={monthlyGoal}
+              onChangeText={setMonthlyGoal}
+              placeholder="예: 80"
+              keyboardType="decimal-pad"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setGoalModalVisible(false)}>
+                <Text style={styles.modalCancelText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalConfirm} onPress={handleSaveGoal} disabled={savingGoal}>
+                <Text style={styles.modalConfirmText}>{savingGoal ? '저장 중...' : '저장'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={editModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -231,6 +330,20 @@ const styles = StyleSheet.create({
   badge: { backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, gap: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
   badgeEmoji: { fontSize: 16 },
   badgeText: { fontSize: 13, fontWeight: '500', color: '#333' },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 16, marginBottom: 8 },
+  editLink: { fontSize: 13, color: '#4CAF50', fontWeight: '600' },
+  goalCard: { backgroundColor: '#FFFFFF', marginHorizontal: 16, borderRadius: 12, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
+  goalRow: { flexDirection: 'row' },
+  goalItem: { flex: 1, alignItems: 'center' },
+  goalDivider: { width: 1, backgroundColor: '#ECECEC', marginHorizontal: 16 },
+  goalLabel: { fontSize: 12, color: '#999', marginBottom: 4 },
+  goalTarget: { fontSize: 20, fontWeight: '700', color: '#1A1A1A', marginBottom: 8 },
+  goalBarBg: { width: '100%', height: 6, backgroundColor: '#EEEEEE', borderRadius: 3, marginBottom: 6 },
+  goalBarFill: { height: 6, backgroundColor: '#4CAF50', borderRadius: 3 },
+  goalProgress: { fontSize: 12, color: '#4CAF50', fontWeight: '600' },
+  goalEmpty: { backgroundColor: '#FFFFFF', marginHorizontal: 16, borderRadius: 12, padding: 16, borderWidth: 2, borderColor: '#E0E0E0', borderStyle: 'dashed', alignItems: 'center' },
+  goalEmptyText: { fontSize: 14, color: '#AAA' },
+  goalInputLabel: { fontSize: 13, color: '#888', fontWeight: '600', marginBottom: 4 },
   menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', marginHorizontal: 16, marginBottom: 1, paddingHorizontal: 16, paddingVertical: 16 },
   menuItemText: { fontSize: 15, color: '#333' },
   menuArrow: { fontSize: 20, color: '#CCC' },

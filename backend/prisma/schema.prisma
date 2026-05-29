@@ -21,6 +21,7 @@ model User {
   courses   Course[]
   followers Follow[]   @relation("following")
   following Follow[]   @relation("follower")
+  goal      Goal?
 }
 
 model Run {
@@ -94,4 +95,13 @@ model Follow {
   createdAt   DateTime @default(now())
 
   @@unique([followerId, followingId])
+}
+
+model Goal {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  weeklyDistance Float    // km
+  monthlyDistance Float   // km
+  updatedAt      DateTime @updatedAt
 }

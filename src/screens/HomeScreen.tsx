@@ -6,6 +6,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { getFeed } from '../api/users';
 import { getMyStats } from '../api/runs';
+import { getGoal, GoalData } from '../api/goals';
 import { useAuth } from '../context/AuthContext';
 import { formatDuration } from '../hooks/useRunningTracker';
 
@@ -29,15 +30,17 @@ export default function HomeScreen({ navigation }: Props) {
   const [feedRuns, setFeedRuns] = useState<any[]>([]);
   const [isPublicFeed, setIsPublicFeed] = useState(false);
   const [stats, setStats] = useState<any>(null);
+  const [goalData, setGoalData] = useState<GoalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
-      const [feed, myStats] = await Promise.all([getFeed(), getMyStats()]);
+      const [feed, myStats, goal] = await Promise.all([getFeed(), getMyStats(), getGoal().catch(() => null)]);
       setFeedRuns(feed.runs);
       setIsPublicFeed(feed.isPublicFeed);
       setStats(myStats);
+      setGoalData(goal);
     } catch {}
     finally { setLoading(false); setRefreshing(false); }
   }, []);
@@ -79,6 +82,28 @@ export default function HomeScreen({ navigation }: Props) {
           </View>
         </View>
       </View>
+
+      {goalData?.goal && (
+        <View style={styles.goalCard}>
+          <Text style={styles.goalTitle}>🎯 이번 주 목표</Text>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalLabel}>
+              {goalData.progress.weeklyDistance.toFixed(1)} / {goalData.goal.weeklyDistance}km
+            </Text>
+            <Text style={styles.goalPct}>
+              {Math.min(100, Math.round((goalData.progress.weeklyDistance / goalData.goal.weeklyDistance) * 100))}%
+            </Text>
+          </View>
+          <View style={styles.goalBarBg}>
+            <View style={[styles.goalBarFill, {
+              width: `${Math.min(100, (goalData.progress.weeklyDistance / goalData.goal.weeklyDistance) * 100)}%` as any,
+            }]} />
+          </View>
+          <Text style={styles.goalMonthly}>
+            이번 달: {goalData.progress.monthlyDistance.toFixed(1)} / {goalData.goal.monthlyDistance}km
+          </Text>
+        </View>
+      )}
 
       <View style={styles.feedHeader}>
         <Text style={styles.sectionTitle}>
@@ -154,6 +179,14 @@ const styles = StyleSheet.create({
   summaryItemValue: { color: '#FFFFFF', fontSize: 18, fontWeight: '600' },
   summaryItemLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
   summaryDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.3)' },
+  goalCard: { backgroundColor: '#FFFFFF', marginHorizontal: 16, marginBottom: 12, borderRadius: 12, padding: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+  goalTitle: { fontSize: 13, fontWeight: '700', color: '#1A1A1A', marginBottom: 8 },
+  goalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  goalLabel: { fontSize: 13, color: '#555' },
+  goalPct: { fontSize: 13, fontWeight: '700', color: '#4CAF50' },
+  goalBarBg: { height: 6, backgroundColor: '#EEEEEE', borderRadius: 3, marginBottom: 8 },
+  goalBarFill: { height: 6, backgroundColor: '#4CAF50', borderRadius: 3 },
+  goalMonthly: { fontSize: 12, color: '#999' },
   feedHeader: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, gap: 8 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
   publicBadge: { backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
