@@ -10,15 +10,21 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import HomeScreen from './src/screens/HomeScreen';
 import LogScreen from './src/screens/LogScreen';
 import CourseScreen from './src/screens/CourseScreen';
+import CourseDetailScreen from './src/screens/CourseDetailScreen';
 import CommunityScreen from './src/screens/CommunityScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import RunningScreen from './src/screens/RunningScreen';
 import LoginScreen from './src/screens/auth/LoginScreen';
 import SignupScreen from './src/screens/auth/SignupScreen';
+import WritePostScreen from './src/screens/WritePostScreen';
+import PostDetailScreen from './src/screens/PostDetailScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
   Running: undefined;
+  WritePost: undefined;
+  PostDetail: { postId: string };
+  CourseDetail: { courseId: string };
 };
 
 export type AuthStackParamList = {
@@ -92,11 +98,10 @@ function AppNavigator() {
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
       <RootStack.Screen name="MainTabs" component={MainTabs} />
-      <RootStack.Screen
-        name="Running"
-        component={RunningScreen}
-        options={{ presentation: 'fullScreenModal' }}
-      />
+      <RootStack.Screen name="Running" component={RunningScreen} options={{ presentation: 'fullScreenModal' }} />
+      <RootStack.Screen name="WritePost" component={WritePostScreen} options={{ presentation: 'modal' }} />
+      <RootStack.Screen name="PostDetail" component={PostDetailScreen} />
+      <RootStack.Screen name="CourseDetail" component={CourseDetailScreen} />
     </RootStack.Navigator>
   );
 }

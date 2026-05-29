@@ -1,114 +1,134 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { CompositeScreenProps } from '@react-navigation/native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { CompositeScreenProps, useFocusEffect } from '@react-navigation/native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { dummyPosts } from '../data/dummyData';
+import { getFeed } from '../api/users';
+import { getMyStats } from '../api/runs';
+import { useAuth } from '../context/AuthContext';
+import { formatDuration } from '../hooks/useRunningTracker';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<{ 홈: undefined; 기록: undefined; 코스: undefined; 커뮤니티: undefined; 프로필: undefined }, '홈'>,
   NativeStackScreenProps<RootStackParamList>
 >;
 
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return '방금 전';
+  if (m < 60) return `${m}분 전`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}시간 전`;
+  return `${Math.floor(h / 24)}일 전`;
+}
+
 export default function HomeScreen({ navigation }: Props) {
+  const { user } = useAuth();
+  const [feedRuns, setFeedRuns] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async () => {
+    try {
+      const [feed, myStats] = await Promise.all([getFeed(), getMyStats()]);
+      setFeedRuns(feed);
+      setStats(myStats);
+    } catch {}
+    finally { setLoading(false); setRefreshing(false); }
+  }, []);
+
+  useFocusEffect(useCallback(() => { setLoading(true); loadData(); }, [loadData]));
+
+  const onRefresh = () => { setRefreshing(true); loadData(); };
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4CAF50" />}
+    >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>같이달려</Text>
-        <TouchableOpacity
-          style={styles.startButton}
-          onPress={() => navigation.navigate('Running')}
-        >
+        <TouchableOpacity style={styles.startButton} onPress={() => navigation.navigate('Running')}>
           <Text style={styles.startButtonText}>▶ 달리기 시작</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>이번 주 달린 거리</Text>
-        <Text style={styles.summaryDistance}>23.5 km</Text>
+        <Text style={styles.summaryLabel}>이번 달 달린 거리</Text>
+        <Text style={styles.summaryDistance}>{stats?.monthlyDistance ?? 0} km</Text>
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryItemValue}>4회</Text>
+            <Text style={styles.summaryItemValue}>{stats?.monthlyRuns ?? 0}회</Text>
             <Text style={styles.summaryItemLabel}>러닝</Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryItemValue}>2h 10m</Text>
-            <Text style={styles.summaryItemLabel}>총 시간</Text>
+            <Text style={styles.summaryItemValue}>{formatDuration(stats?.totalDuration ?? 0)}</Text>
+            <Text style={styles.summaryItemLabel}>누적 시간</Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryItemValue}>5'33"</Text>
-            <Text style={styles.summaryItemLabel}>평균 페이스</Text>
+            <Text style={styles.summaryItemValue}>{stats?.totalRuns ?? 0}회</Text>
+            <Text style={styles.summaryItemLabel}>총 러닝</Text>
           </View>
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>친구들의 활동</Text>
-      {dummyPosts.map((post) => (
-        <View key={post.id} style={styles.postCard}>
-          <View style={styles.postHeader}>
-            <Image source={{ uri: post.avatar }} style={styles.avatar} />
-            <View style={styles.postMeta}>
-              <Text style={styles.postUser}>{post.user}</Text>
-              <Text style={styles.postTime}>{post.time}</Text>
-            </View>
-          </View>
-          <Text style={styles.postTitle}>{post.title}</Text>
-          <View style={styles.postStats}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{post.distance}km</Text>
-              <Text style={styles.statLabel}>거리</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{post.duration}</Text>
-              <Text style={styles.statLabel}>시간</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{post.pace}/km</Text>
-              <Text style={styles.statLabel}>페이스</Text>
-            </View>
-          </View>
-          <View style={styles.postActions}>
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.actionText}>👍 {post.likes}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.actionText}>💬 {post.comments}</Text>
-            </TouchableOpacity>
-          </View>
+      <Text style={styles.sectionTitle}>팔로우 피드</Text>
+
+      {loading ? (
+        <ActivityIndicator color="#4CAF50" style={{ marginTop: 20 }} />
+      ) : feedRuns.length === 0 ? (
+        <View style={styles.emptyFeed}>
+          <Text style={styles.emptyEmoji}>👥</Text>
+          <Text style={styles.emptyTitle}>아직 피드가 없어요</Text>
+          <Text style={styles.emptyDesc}>다른 러너를 팔로우하면 활동이 여기 보여요</Text>
         </View>
-      ))}
+      ) : (
+        feedRuns.map((run) => (
+          <View key={run.id} style={styles.postCard}>
+            <View style={styles.postHeader}>
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarText}>{run.user.name?.[0] ?? '?'}</Text>
+              </View>
+              <View style={styles.postMeta}>
+                <Text style={styles.postUser}>{run.user.name}</Text>
+                <Text style={styles.postTime}>{timeAgo(run.createdAt)}</Text>
+              </View>
+            </View>
+            {run.course && <Text style={styles.postCourse}>📍 {run.course.name}</Text>}
+            <View style={styles.postStats}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{run.distance.toFixed(2)}km</Text>
+                <Text style={styles.statLabel}>거리</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{formatDuration(run.duration)}</Text>
+                <Text style={styles.statLabel}>시간</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{run.pace}/km</Text>
+                <Text style={styles.statLabel}>페이스</Text>
+              </View>
+            </View>
+          </View>
+        ))
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F5F5' },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, backgroundColor: '#FFFFFF' },
   headerTitle: { fontSize: 22, fontWeight: '700', color: '#1A1A1A' },
-  startButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
+  startButton: { backgroundColor: '#4CAF50', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   startButtonText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },
-  summaryCard: {
-    backgroundColor: '#4CAF50',
-    margin: 16,
-    borderRadius: 16,
-    padding: 20,
-  },
+  summaryCard: { backgroundColor: '#4CAF50', margin: 16, borderRadius: 16, padding: 20 },
   summaryLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginBottom: 4 },
   summaryDistance: { color: '#FFFFFF', fontSize: 40, fontWeight: '700', marginBottom: 16 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-around' },
@@ -117,36 +137,20 @@ const styles = StyleSheet.create({
   summaryItemLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
   summaryDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.3)' },
   sectionTitle: { fontSize: 16, fontWeight: '700', marginHorizontal: 16, marginBottom: 8, color: '#1A1A1A' },
-  postCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
+  emptyFeed: { alignItems: 'center', paddingVertical: 48 },
+  emptyEmoji: { fontSize: 40, marginBottom: 10 },
+  emptyTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 6 },
+  emptyDesc: { fontSize: 13, color: '#999', textAlign: 'center', paddingHorizontal: 32 },
+  postCard: { backgroundColor: '#FFFFFF', marginHorizontal: 16, marginBottom: 12, borderRadius: 12, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
   postHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  avatar: { width: 40, height: 40, borderRadius: 20 },
+  avatarCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center' },
+  avatarText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
   postMeta: { marginLeft: 10 },
   postUser: { fontWeight: '600', fontSize: 14, color: '#1A1A1A' },
   postTime: { fontSize: 12, color: '#999' },
-  postTitle: { fontSize: 15, fontWeight: '500', color: '#333', marginBottom: 12 },
-  postStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#F9F9F9',
-    borderRadius: 8,
-    paddingVertical: 10,
-    marginBottom: 12,
-  },
+  postCourse: { fontSize: 12, color: '#4CAF50', marginBottom: 8 },
+  postStats: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: '#F9F9F9', borderRadius: 8, paddingVertical: 10 },
   statItem: { alignItems: 'center' },
   statValue: { fontSize: 15, fontWeight: '700', color: '#1A1A1A' },
   statLabel: { fontSize: 11, color: '#999', marginTop: 2 },
-  postActions: { flexDirection: 'row', gap: 16 },
-  actionButton: { paddingVertical: 4 },
-  actionText: { fontSize: 14, color: '#666' },
 });
