@@ -1,6 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../App';
 import { getMyRuns, getMyStats, createRun } from '../api/runs';
 import { formatDuration } from '../hooks/useRunningTracker';
 import { getPendingRuns, removePendingRun } from '../storage/runStorage';
@@ -33,6 +36,7 @@ function formatDate(iso: string) {
 }
 
 export default function LogScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [runs, setRuns] = useState<Run[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [pendingRuns, setPendingRuns] = useState<PendingRun[]>([]);
@@ -175,7 +179,7 @@ export default function LogScreen() {
         runs.map((run) => {
           const { day, month } = formatDate(run.createdAt);
           return (
-            <TouchableOpacity key={run.id} style={styles.logCard}>
+            <TouchableOpacity key={run.id} style={styles.logCard} onPress={() => navigation.navigate('RunDetail', { run })}>
               <View style={styles.logDate}>
                 <Text style={styles.logDay}>{day}</Text>
                 <Text style={styles.logMonth}>{month}월</Text>

@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert, SafeAreaView,
-  Platform, Modal, FlatList, ActivityIndicator,
+  Platform, Modal, FlatList, ActivityIndicator, Dimensions,
 } from 'react-native';
+import MapView, { Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useRunningTracker } from '../hooks/useRunningTracker';
@@ -10,6 +11,8 @@ import { createRun } from '../api/runs';
 import { initHealthKit, getRunHealthData } from '../hooks/useHealthKit';
 import { getCourses } from '../api/courses';
 import { savePendingRun } from '../storage/runStorage';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface Course { id: string; name: string; distance: number; }
 
@@ -20,6 +23,7 @@ export default function RunningScreen({ navigation }: Props) {
   const [started, setStarted] = useState(false);
   const [healthKitReady, setHealthKitReady] = useState(false);
   const startTimeRef = useRef<Date | null>(null);
+  const mapRef = useRef<MapView>(null);
   const [courseModalVisible, setCourseModalVisible] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -30,6 +34,17 @@ export default function RunningScreen({ navigation }: Props) {
       initHealthKit().then(setHealthKitReady);
     }
   }, []);
+
+  useEffect(() => {
+    if (!started || tracker.coordinates.length === 0) return;
+    const last = tracker.coordinates[tracker.coordinates.length - 1];
+    mapRef.current?.animateToRegion({
+      latitude: last.latitude,
+      longitude: last.longitude,
+      latitudeDelta: 0.003,
+      longitudeDelta: 0.003,
+    }, 500);
+  }, [started, tracker.coordinates]);
 
   const openCourseModal = useCallback(async () => {
     setCourseModalVisible(true);
@@ -120,9 +135,29 @@ export default function RunningScreen({ navigation }: Props) {
         </View>
       )}
 
-      <View style={styles.statsContainer}>
+      {started && (
+        <MapView
+          ref={mapRef}
+          provider={PROVIDER_DEFAULT}
+          style={styles.map}
+          initialRegion={
+            tracker.coordinates.length > 0
+              ? { latitude: tracker.coordinates[0].latitude, longitude: tracker.coordinates[0].longitude, latitudeDelta: 0.003, longitudeDelta: 0.003 }
+              : { latitude: 37.5665, longitude: 126.9780, latitudeDelta: 0.01, longitudeDelta: 0.01 }
+          }
+          scrollEnabled={false}
+          zoomEnabled={false}
+          rotateEnabled={false}
+        >
+          {tracker.coordinates.length > 1 && (
+            <Polyline coordinates={tracker.coordinates} strokeColor="#4CAF50" strokeWidth={4} />
+          )}
+        </MapView>
+      )}
+
+      <View style={[styles.statsContainer, started && styles.statsContainerCompact]}>
         <View style={styles.mainStat}>
-          <Text style={styles.mainStatValue}>{tracker.distance.toFixed(2)}</Text>
+          <Text style={[styles.mainStatValue, started && styles.mainStatValueCompact]}>{tracker.distance.toFixed(2)}</Text>
           <Text style={styles.mainStatUnit}>km</Text>
         </View>
         <View style={styles.subStats}>
@@ -230,9 +265,12 @@ const styles = StyleSheet.create({
   errorText: { color: '#FFFFFF', fontSize: 13, textAlign: 'center' },
   healthBanner: { backgroundColor: '#1C2128', marginHorizontal: 20, borderRadius: 8, padding: 8, marginBottom: 4, alignItems: 'center' },
   healthBannerText: { color: '#FF6B6B', fontSize: 12, fontWeight: '600' },
+  map: { width: '100%', height: SCREEN_HEIGHT * 0.28 },
   statsContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  statsContainerCompact: { flex: 0, paddingVertical: 20 },
   mainStat: { alignItems: 'center', marginBottom: 48 },
   mainStatValue: { fontSize: 88, fontWeight: '700', color: '#FFFFFF', lineHeight: 92 },
+  mainStatValueCompact: { fontSize: 60, lineHeight: 64 },
   mainStatUnit: { fontSize: 22, color: '#4CAF50', fontWeight: '600', marginTop: -8 },
   subStats: { flexDirection: 'row', backgroundColor: '#1C2128', borderRadius: 16, paddingVertical: 20, paddingHorizontal: 12, width: '100%', justifyContent: 'space-around' },
   subStatItem: { alignItems: 'center', flex: 1 },
