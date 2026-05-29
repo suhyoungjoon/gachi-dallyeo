@@ -9,6 +9,7 @@ import { useRunningTracker } from '../hooks/useRunningTracker';
 import { createRun } from '../api/runs';
 import { initHealthKit, getRunHealthData } from '../hooks/useHealthKit';
 import { getCourses } from '../api/courses';
+import { savePendingRun } from '../storage/runStorage';
 
 interface Course { id: string; name: string; distance: number; }
 
@@ -59,24 +60,30 @@ export default function RunningScreen({ navigation }: Props) {
         onPress: async () => {
           tracker.stop();
           if (tracker.distance > 0) {
+            let healthData = null;
+            if (healthKitReady && startTimeRef.current) {
+              try { healthData = await getRunHealthData(startTimeRef.current, new Date()); } catch {}
+            }
+            const payload = {
+              distance: tracker.distance,
+              duration: tracker.elapsed,
+              pace: tracker.pace,
+              calories: healthData?.activeCalories ?? tracker.calories,
+              coordinates: tracker.coordinates,
+              courseId: selectedCourse?.id,
+              avgHeartRate: healthData?.avgHeartRate ?? undefined,
+              maxHeartRate: healthData?.maxHeartRate ?? undefined,
+              minHeartRate: healthData?.minHeartRate ?? undefined,
+            };
             try {
-              let healthData = null;
-              if (healthKitReady && startTimeRef.current) {
-                healthData = await getRunHealthData(startTimeRef.current, new Date());
-              }
-              await createRun({
-                distance: tracker.distance,
-                duration: tracker.elapsed,
-                pace: tracker.pace,
-                calories: healthData?.activeCalories ?? tracker.calories,
-                coordinates: tracker.coordinates,
-                courseId: selectedCourse?.id,
-                avgHeartRate: healthData?.avgHeartRate ?? undefined,
-                maxHeartRate: healthData?.maxHeartRate ?? undefined,
-                minHeartRate: healthData?.minHeartRate ?? undefined,
-              });
+              await createRun(payload);
             } catch {
-              Alert.alert('저장 실패', '네트워크 오류로 기록 저장에 실패했습니다.');
+              await savePendingRun({
+                localId: Date.now().toString(),
+                createdAt: new Date().toISOString(),
+                ...payload,
+              });
+              Alert.alert('임시 저장됨', '네트워크 오류로 기록이 기기에 임시 저장되었습니다.\n기록 화면을 열면 자동으로 동기화됩니다.');
             }
           }
           tracker.reset();

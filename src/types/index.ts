@@ -12,3 +12,17 @@ export interface Coordinate {
   latitude: number;
   longitude: number;
 }
+
+export interface PendingRun {
+  localId: string;
+  createdAt: string;
+  distance: number;
+  duration: number;
+  pace: string;
+  calories: number;
+  coordinates: Coordinate[];
+  courseId?: string;
+  avgHeartRate?: number;
+  maxHeartRate?: number;
+  minHeartRate?: number;
+}
