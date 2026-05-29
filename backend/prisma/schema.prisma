@@ -24,17 +24,20 @@ model User {
 }
 
 model Run {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  distance    Float
-  duration    Int
-  pace        String
-  calories    Int
-  coordinates Json
-  courseId    String?
-  course      Course?  @relation(fields: [courseId], references: [id])
-  createdAt   DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  distance       Float
+  duration       Int
+  pace           String
+  calories       Int
+  coordinates    Json
+  avgHeartRate   Int?
+  maxHeartRate   Int?
+  minHeartRate   Int?
+  courseId       String?
+  course         Course?  @relation(fields: [courseId], references: [id])
+  createdAt      DateTime @default(now())
 }
 
 model Course {

@@ -1,20 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Alert, SafeAreaView,
+  View, Text, StyleSheet, TouchableOpacity, Alert, SafeAreaView, Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useRunningTracker } from '../hooks/useRunningTracker';
 import { createRun } from '../api/runs';
+import { initHealthKit, getRunHealthData } from '../hooks/useHealthKit';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Running'>;
 
 export default function RunningScreen({ navigation }: Props) {
   const tracker = useRunningTracker();
   const [started, setStarted] = useState(false);
+  const [healthKitReady, setHealthKitReady] = useState(false);
+  const startTimeRef = useRef<Date | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      initHealthKit().then(setHealthKitReady);
+    }
+  }, []);
 
   const handleStart = async () => {
     setStarted(true);
+    startTimeRef.current = new Date();
     await tracker.start();
   };
 
@@ -32,12 +42,19 @@ export default function RunningScreen({ navigation }: Props) {
           tracker.stop();
           if (tracker.distance > 0) {
             try {
+              let healthData = null;
+              if (healthKitReady && startTimeRef.current) {
+                healthData = await getRunHealthData(startTimeRef.current, new Date());
+              }
               await createRun({
                 distance: tracker.distance,
                 duration: tracker.elapsed,
                 pace: tracker.pace,
-                calories: tracker.calories,
+                calories: healthData?.activeCalories ?? tracker.calories,
                 coordinates: tracker.coordinates,
+                avgHeartRate: healthData?.avgHeartRate ?? undefined,
+                maxHeartRate: healthData?.maxHeartRate ?? undefined,
+                minHeartRate: healthData?.minHeartRate ?? undefined,
               });
             } catch {
               Alert.alert('저장 실패', '네트워크 오류로 기록 저장에 실패했습니다.');
@@ -68,6 +85,12 @@ export default function RunningScreen({ navigation }: Props) {
       {tracker.locationError && (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{tracker.locationError}</Text>
+        </View>
+      )}
+
+      {healthKitReady && started && (
+        <View style={styles.healthBanner}>
+          <Text style={styles.healthBannerText}>❤️ Apple Watch 심박수 연동 중</Text>
         </View>
       )}
 
@@ -134,6 +157,8 @@ const styles = StyleSheet.create({
   topTitle: { fontSize: 17, fontWeight: '600', color: '#FFFFFF' },
   errorBanner: { backgroundColor: '#FF3B30', marginHorizontal: 20, borderRadius: 8, padding: 10, marginBottom: 8 },
   errorText: { color: '#FFFFFF', fontSize: 13, textAlign: 'center' },
+  healthBanner: { backgroundColor: '#1C2128', marginHorizontal: 20, borderRadius: 8, padding: 8, marginBottom: 4, alignItems: 'center' },
+  healthBannerText: { color: '#FF6B6B', fontSize: 12, fontWeight: '600' },
   statsContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   mainStat: { alignItems: 'center', marginBottom: 48 },
   mainStatValue: { fontSize: 88, fontWeight: '700', color: '#FFFFFF', lineHeight: 92 },

@@ -7,6 +7,9 @@ export interface RunPayload {
   calories: number;
   coordinates: { latitude: number; longitude: number }[];
   courseId?: string;
+  avgHeartRate?: number;
+  maxHeartRate?: number;
+  minHeartRate?: number;
 }
 
 export const createRun = (data: RunPayload) =>

@@ -10,9 +10,9 @@ router.use(authenticate);
 // 달리기 기록 저장
 router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { distance, duration, pace, calories, coordinates, courseId } = req.body;
+    const { distance, duration, pace, calories, coordinates, courseId, avgHeartRate, maxHeartRate, minHeartRate } = req.body;
     const run = await prisma.run.create({
-      data: { userId: req.userId!, distance, duration, pace, calories, coordinates, courseId: courseId ?? null },
+      data: { userId: req.userId!, distance, duration, pace, calories, coordinates, courseId: courseId ?? null, avgHeartRate: avgHeartRate ?? null, maxHeartRate: maxHeartRate ?? null, minHeartRate: minHeartRate ?? null },
       include: { course: { select: { id: true, name: true } } },
     });
     res.status(201).json({ run });

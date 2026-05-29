@@ -11,6 +11,9 @@ interface Run {
   pace: string;
   calories: number;
   createdAt: string;
+  avgHeartRate?: number | null;
+  maxHeartRate?: number | null;
+  minHeartRate?: number | null;
   course?: { id: string; name: string } | null;
 }
 
@@ -95,6 +98,9 @@ export default function LogScreen() {
                   <Text style={styles.logDetailText}>⏱ {formatDuration(run.duration)}</Text>
                   <Text style={styles.logDetailText}>⚡ {run.pace}/km</Text>
                   <Text style={styles.logDetailText}>🔥 {run.calories}kcal</Text>
+                  {run.avgHeartRate && (
+                    <Text style={styles.logDetailText}>❤️ {run.avgHeartRate}bpm</Text>
+                  )}
                 </View>
               </View>
               <Text style={styles.logArrow}>›</Text>
