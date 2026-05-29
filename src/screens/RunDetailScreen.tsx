@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Polyline, Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
@@ -23,12 +24,13 @@ function getRegion(coords: { latitude: number; longitude: number }[]) {
 
 export default function RunDetailScreen({ navigation, route }: Props) {
   const { run } = route.params;
+  const insets = useSafeAreaInsets();
   const coords: { latitude: number; longitude: number }[] = Array.isArray(run.coordinates) ? run.coordinates : [];
   const region = getRegion(coords);
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← 뒤로</Text>
         </TouchableOpacity>
@@ -97,7 +99,7 @@ export default function RunDetailScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F5F5' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, backgroundColor: '#FFFFFF' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12, backgroundColor: '#FFFFFF' },
   backText: { fontSize: 16, color: '#4CAF50' },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#1A1A1A' },
   map: { width: '100%', height: 300 },

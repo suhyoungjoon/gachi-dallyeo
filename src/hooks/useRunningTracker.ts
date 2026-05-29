@@ -55,26 +55,33 @@ export function useRunningTracker() {
     timerRef.current = setInterval(() => setElapsed((p) => p + 1), 1000);
   }, [stopTimer]);
 
-  const subscribeLocation = useCallback(async () => {
-    subRef.current = await Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.BestForNavigation, distanceInterval: 5 },
-      (loc) => {
-        const coord: Coordinate = {
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-        };
-        setCoordinates((prev) => [...prev, coord]);
-        if (lastCoordRef.current) {
-          const delta = haversineKm(lastCoordRef.current, coord);
-          // GPS 노이즈 필터: 한 스텝에 100m 이상 점프 무시
-          if (delta < 0.1) {
-            setDistance((prev) => prev + delta);
-          }
-        }
-        lastCoordRef.current = coord;
+  const handleLocationUpdate = useCallback((loc: Location.LocationObject) => {
+    const coord: Coordinate = {
+      latitude: loc.coords.latitude,
+      longitude: loc.coords.longitude,
+    };
+    setCoordinates((prev) => [...prev, coord]);
+    if (lastCoordRef.current) {
+      const delta = haversineKm(lastCoordRef.current, coord);
+      if (delta < 0.1) {
+        setDistance((prev) => prev + delta);
       }
-    );
+    }
+    lastCoordRef.current = coord;
   }, []);
+
+  const subscribeLocation = useCallback(async () => {
+    // 현재 위치를 즉시 한 번 가져옴 (시뮬레이터/초기 화면 대응)
+    try {
+      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      handleLocationUpdate(current);
+    } catch {}
+
+    subRef.current = await Location.watchPositionAsync(
+      { accuracy: Location.Accuracy.BestForNavigation, distanceInterval: 1 },
+      handleLocationUpdate,
+    );
+  }, [handleLocationUpdate]);
 
   const unsubscribeLocation = useCallback(() => {
     subRef.current?.remove();

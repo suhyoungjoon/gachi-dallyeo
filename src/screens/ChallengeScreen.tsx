@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   ActivityIndicator, Modal, TextInput, Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
@@ -23,6 +24,7 @@ function formatDate(iso: string) {
 
 export default function ChallengeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const insets = useSafeAreaInsets();
   const [data, setData] = useState<ChallengeListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -129,7 +131,10 @@ export default function ChallengeScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.backText}>← 뒤로</Text>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>🏆 챌린지</Text>
         <TouchableOpacity style={styles.createBtn} onPress={() => setModalVisible(true)}>
           <Text style={styles.createBtnText}>+ 만들기</Text>
@@ -210,8 +215,9 @@ export default function ChallengeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F5F5' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, backgroundColor: '#FFFFFF' },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#1A1A1A' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12, backgroundColor: '#FFFFFF' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  backText: { fontSize: 16, color: '#4CAF50', minWidth: 60 },
   createBtn: { backgroundColor: '#4CAF50', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
   createBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 13 },
   scrollContent: { padding: 16, paddingBottom: 32 },

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { getCourseDetail } from '../api/courses';
@@ -11,6 +12,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'CourseDetail'>;
 export default function CourseDetailScreen({ navigation, route }: Props) {
   const { courseId } = route.params;
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,7 +29,7 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← 뒤로</Text>
         </TouchableOpacity>
@@ -83,7 +85,7 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F5F5' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8, backgroundColor: '#FFFFFF' },
+  header: { paddingHorizontal: 16, paddingBottom: 8, backgroundColor: '#FFFFFF' },
   backText: { fontSize: 16, color: '#4CAF50' },
   courseInfo: { backgroundColor: '#FFFFFF', padding: 20, marginBottom: 12 },
   courseName: { fontSize: 22, fontWeight: '700', color: '#1A1A1A', marginBottom: 6 },

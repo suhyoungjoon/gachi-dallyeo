@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CompositeScreenProps, useFocusEffect } from '@react-navigation/native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -27,6 +28,7 @@ function timeAgo(iso: string) {
 
 export default function HomeScreen({ navigation }: Props) {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [feedRuns, setFeedRuns] = useState<any[]>([]);
   const [isPublicFeed, setIsPublicFeed] = useState(false);
   const [stats, setStats] = useState<any>(null);
@@ -55,7 +57,7 @@ export default function HomeScreen({ navigation }: Props) {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4CAF50" />}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.headerTitle}>같이달려</Text>
         <TouchableOpacity style={styles.startButton} onPress={() => navigation.navigate('Running')}>
           <Text style={styles.startButtonText}>▶ 달리기 시작</Text>
@@ -175,7 +177,7 @@ export default function HomeScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F5F5' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, backgroundColor: '#FFFFFF' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12, backgroundColor: '#FFFFFF' },
   headerTitle: { fontSize: 22, fontWeight: '700', color: '#1A1A1A' },
   startButton: { backgroundColor: '#4CAF50', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   startButtonText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },

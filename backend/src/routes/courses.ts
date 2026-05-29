@@ -30,7 +30,10 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     if (!name?.trim() || !distance) { res.status(400).json({ message: '코스명과 거리를 입력해주세요.' }); return; }
     const course = await prisma.course.create({
       data: { name: name.trim(), distance: Number(distance), description, createdById: req.userId! },
-      include: { createdBy: { select: { id: true, name: true } } },
+      include: {
+        createdBy: { select: { id: true, name: true } },
+        _count: { select: { runs: true } },
+      },
     });
     res.status(201).json({ course });
   } catch {

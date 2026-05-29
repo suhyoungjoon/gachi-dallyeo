@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, FlatList, StyleSheet,
   TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { searchUsers, followUser, unfollowUser } from '../api/users';
@@ -19,6 +20,7 @@ interface User {
 
 export default function UserSearchScreen({ navigation }: Props) {
   const { user: me } = useAuth();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,7 +81,7 @@ export default function UserSearchScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← 뒤로</Text>
         </TouchableOpacity>
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F5F5' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16, paddingBottom: 12, backgroundColor: '#FFFFFF',
   },
   backText: { fontSize: 16, color: '#4CAF50' },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#1A1A1A' },

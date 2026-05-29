@@ -74,7 +74,7 @@ export default function RunningScreen({ navigation }: Props) {
         text: '저장하고 종료',
         onPress: async () => {
           tracker.stop();
-          if (tracker.distance > 0) {
+          if (tracker.elapsed > 0) {
             let healthData = null;
             if (healthKitReady && startTimeRef.current) {
               try { healthData = await getRunHealthData(startTimeRef.current, new Date()); } catch {}

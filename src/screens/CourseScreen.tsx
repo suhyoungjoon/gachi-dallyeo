@@ -76,8 +76,8 @@ export default function CourseScreen() {
                 </View>
                 {course.description ? <Text style={styles.courseDesc}>{course.description}</Text> : null}
                 <View style={styles.courseFooter}>
-                  <Text style={styles.courseParticipants}>👥 {course._count.runs}번 달렸어요</Text>
-                  <Text style={styles.courseBy}>by {course.createdBy.name}</Text>
+                  <Text style={styles.courseParticipants}>👥 {course._count?.runs ?? 0}번 달렸어요</Text>
+                  <Text style={styles.courseBy}>by {course.createdBy?.name ?? ''}</Text>
                 </View>
               </TouchableOpacity>
             ))
