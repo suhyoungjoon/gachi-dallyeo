@@ -83,6 +83,14 @@ export default function HomeScreen({ navigation }: Props) {
         </View>
       </View>
 
+      <TouchableOpacity style={styles.challengeBanner} onPress={() => navigation.navigate('Challenge')}>
+        <View>
+          <Text style={styles.challengeBannerTitle}>🏆 러닝 챌린지</Text>
+          <Text style={styles.challengeBannerDesc}>친구와 목표 거리를 경쟁해보세요</Text>
+        </View>
+        <Text style={styles.challengeBannerArrow}>›</Text>
+      </TouchableOpacity>
+
       {goalData?.goal && (
         <View style={styles.goalCard}>
           <Text style={styles.goalTitle}>🎯 이번 주 목표</Text>
@@ -179,6 +187,10 @@ const styles = StyleSheet.create({
   summaryItemValue: { color: '#FFFFFF', fontSize: 18, fontWeight: '600' },
   summaryItemLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
   summaryDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.3)' },
+  challengeBanner: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1A1A2E', marginHorizontal: 16, marginBottom: 12, borderRadius: 14, padding: 16 },
+  challengeBannerTitle: { fontSize: 15, fontWeight: '700', color: '#FFFFFF', marginBottom: 3 },
+  challengeBannerDesc: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
+  challengeBannerArrow: { fontSize: 24, color: '#4CAF50', fontWeight: '700' },
   goalCard: { backgroundColor: '#FFFFFF', marginHorizontal: 16, marginBottom: 12, borderRadius: 12, padding: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
   goalTitle: { fontSize: 13, fontWeight: '700', color: '#1A1A1A', marginBottom: 8 },
   goalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },

@@ -19,9 +19,11 @@ model User {
   comments  Comment[]
   likes     PostLike[]
   courses   Course[]
-  followers Follow[]   @relation("following")
-  following Follow[]   @relation("follower")
-  goal      Goal?
+  followers               Follow[]               @relation("following")
+  following               Follow[]               @relation("follower")
+  goal                    Goal?
+  createdChallenges       Challenge[]
+  challengeParticipations ChallengeParticipant[]
 }
 
 model Run {
@@ -101,7 +103,30 @@ model Goal {
   id             String   @id @default(cuid())
   userId         String   @unique
   user           User     @relation(fields: [userId], references: [id])
-  weeklyDistance Float    // km
-  monthlyDistance Float   // km
+  weeklyDistance Float
+  monthlyDistance Float
   updatedAt      DateTime @updatedAt
+}
+
+model Challenge {
+  id             String                 @id @default(cuid())
+  title          String
+  targetDistance Float
+  startDate      DateTime
+  endDate        DateTime
+  createdById    String
+  createdBy      User                   @relation(fields: [createdById], references: [id])
+  participants   ChallengeParticipant[]
+  createdAt      DateTime               @default(now())
+}
+
+model ChallengeParticipant {
+  id          String    @id @default(cuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  joinedAt    DateTime  @default(now())
+
+  @@unique([challengeId, userId])
 }

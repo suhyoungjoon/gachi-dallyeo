@@ -7,6 +7,7 @@ import userRoutes from './routes/users';
 import courseRoutes from './routes/courses';
 import postRoutes from './routes/posts';
 import goalRoutes from './routes/goals';
+import challengeRoutes from './routes/challenges';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/goals', goalRoutes);
+app.use('/api/challenges', challengeRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
