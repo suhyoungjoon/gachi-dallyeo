@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -40,6 +41,7 @@ function getBadges(stats: ProfileData['stats']): string[] {
 
 export default function ProfileScreen({ navigation }: Props) {
   const { logout } = useAuth();
+  const insets = useSafeAreaInsets();
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -111,7 +113,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.profileHeader}>
+      <View style={[styles.profileHeader, { paddingTop: insets.top + 20 }]}>
         <View style={styles.avatarCircle}>
           <Text style={styles.avatarText}>{user?.name?.[0] ?? '?'}</Text>
         </View>
@@ -300,7 +302,7 @@ export default function ProfileScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F5F5' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  profileHeader: { backgroundColor: '#FFFFFF', alignItems: 'center', paddingTop: 32, paddingBottom: 24 },
+  profileHeader: { backgroundColor: '#FFFFFF', alignItems: 'center', paddingBottom: 24 },
   avatarCircle: { width: 88, height: 88, borderRadius: 44, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
   avatarText: { fontSize: 36, fontWeight: '700', color: '#FFFFFF' },
   name: { fontSize: 20, fontWeight: '700', color: '#1A1A1A', marginBottom: 4 },
