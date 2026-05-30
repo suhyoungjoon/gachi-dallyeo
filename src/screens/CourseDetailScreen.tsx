@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MapView, { Polyline, Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { getCourseDetail } from '../api/courses';
@@ -26,6 +27,15 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
   if (loading) return <View style={styles.center}><ActivityIndicator color="#4CAF50" size="large" /></View>;
 
   const { course, leaderboard, myBest } = data ?? {};
+  const coords: { latitude: number; longitude: number }[] = Array.isArray(course?.coordinates) ? course.coordinates : [];
+
+  function getRegion(c: typeof coords) {
+    if (c.length === 0) return { latitude: 37.5665, longitude: 126.978, latitudeDelta: 0.01, longitudeDelta: 0.01 };
+    const lats = c.map((p) => p.latitude), lngs = c.map((p) => p.longitude);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+    return { latitude: (minLat + maxLat) / 2, longitude: (minLng + maxLng) / 2, latitudeDelta: Math.max((maxLat - minLat) * 1.4, 0.003), longitudeDelta: Math.max((maxLng - minLng) * 1.4, 0.003) };
+  }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -34,6 +44,14 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
           <Text style={styles.backText}>← 뒤로</Text>
         </TouchableOpacity>
       </View>
+
+      {coords.length > 1 ? (
+        <MapView provider={PROVIDER_DEFAULT} style={styles.map} initialRegion={getRegion(coords)} scrollEnabled zoomEnabled>
+          <Polyline coordinates={coords} strokeColor="#4CAF50" strokeWidth={4} />
+          <Marker coordinate={coords[0]} title="출발" pinColor="#4CAF50" />
+          <Marker coordinate={coords[coords.length - 1]} title="도착" pinColor="#FF3B30" />
+        </MapView>
+      ) : null}
 
       <View style={styles.courseInfo}>
         <Text style={styles.courseName}>{course?.name}</Text>
@@ -85,6 +103,7 @@ export default function CourseDetailScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F5F5' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  map: { width: '100%', height: 220 },
   header: { paddingHorizontal: 16, paddingBottom: 8, backgroundColor: '#FFFFFF' },
   backText: { fontSize: 16, color: '#4CAF50' },
   courseInfo: { backgroundColor: '#FFFFFF', padding: 20, marginBottom: 12 },

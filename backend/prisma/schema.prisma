@@ -48,6 +48,7 @@ model Course {
   name        String
   distance    Float
   description String?
+  coordinates Json?
   createdById String
   createdBy   User     @relation(fields: [createdById], references: [id])
   runs        Run[]

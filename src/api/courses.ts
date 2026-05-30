@@ -3,7 +3,7 @@ import client from './client';
 export const getCourses = () =>
   client.get('/api/courses').then((r) => r.data.courses);
 
-export const createCourse = (data: { name: string; distance: number; description?: string }) =>
+export const createCourse = (data: { name: string; distance: number; description?: string; coordinates?: { latitude: number; longitude: number }[] }) =>
   client.post('/api/courses', data).then((r) => r.data.course);
 
 export const getCourseDetail = (id: string) =>
