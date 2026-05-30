@@ -22,6 +22,7 @@ import UserSearchScreen from './src/screens/UserSearchScreen';
 import RunDetailScreen from './src/screens/RunDetailScreen';
 import ChallengeScreen from './src/screens/ChallengeScreen';
 import ChallengeDetailScreen from './src/screens/ChallengeDetailScreen';
+import GroupHomeScreen from './src/screens/GroupHomeScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -33,6 +34,7 @@ export type RootStackParamList = {
   RunDetail: { run: any };
   Challenge: undefined;
   ChallengeDetail: { challengeId: string };
+  GroupHome: { groupId: string };
 };
 
 export type AuthStackParamList = {
@@ -114,6 +116,7 @@ function AppNavigator() {
       <RootStack.Screen name="RunDetail" component={RunDetailScreen} />
       <RootStack.Screen name="Challenge" component={ChallengeScreen} />
       <RootStack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
+      <RootStack.Screen name="GroupHome" component={GroupHomeScreen} />
     </RootStack.Navigator>
   );
 }

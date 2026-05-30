@@ -12,7 +12,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const category = req.query.category as string | undefined;
     const posts = await prisma.post.findMany({
-      where: category ? { category } : undefined,
+      where: { groupId: null, ...(category ? { category } : {}) },
       orderBy: { createdAt: 'desc' },
       take: 30,
       include: {
@@ -29,12 +29,12 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
 // 게시글 작성
 router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { category, title, content } = req.body;
+    const { category, title, content, groupId } = req.body;
     if (!category || !title?.trim() || !content?.trim()) {
       res.status(400).json({ message: '카테고리, 제목, 내용을 모두 입력해주세요.' }); return;
     }
     const post = await prisma.post.create({
-      data: { userId: req.userId!, category, title: title.trim(), content: content.trim() },
+      data: { userId: req.userId!, category, title: title.trim(), content: content.trim(), groupId: groupId ?? null },
       include: {
         user: { select: { id: true, name: true } },
         _count: { select: { comments: true, likes: true } },
