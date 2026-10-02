@@ -229,14 +229,22 @@ export default function ProfileScreen({ navigation }: Props) {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>설정</Text>
-        {['알림 설정', '개인정보 처리방침', '이용약관'].map((item) => (
-          <TouchableOpacity key={item} style={styles.menuItem}>
-            <Text style={styles.menuItemText}>{item}</Text>
+        {([
+          { label: '차단한 사용자', onPress: () => navigation.navigate('BlockedUsers') },
+          { label: '개인정보 처리방침', onPress: () => navigation.navigate('Legal', { doc: 'privacy' }) },
+          { label: '이용약관', onPress: () => navigation.navigate('Legal', { doc: 'terms' }) },
+        ]).map((item) => (
+          <TouchableOpacity key={item.label} style={styles.menuItem} onPress={item.onPress}>
+            <Text style={styles.menuItemText}>{item.label}</Text>
             <Text style={styles.menuArrow}>›</Text>
           </TouchableOpacity>
         ))}
         <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
           <Text style={[styles.menuItemText, { color: '#FF3B30' }]}>로그아웃</Text>
+          <Text style={styles.menuArrow}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.menuItem, { marginBottom: insets.bottom + 24 }]} onPress={() => navigation.navigate('AccountDelete')}>
+          <Text style={[styles.menuItemText, { color: '#999' }]}>계정 삭제</Text>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
       </View>

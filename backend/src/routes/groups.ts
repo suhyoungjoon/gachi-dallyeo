@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, AuthRequest } from '../middleware/authenticate';
+import { getHiddenUserIds, getReportedIds } from '../lib/blocks';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -113,8 +114,9 @@ router.get('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     };
 
     // 최근 달리기 기록
+    const hidden = await getHiddenUserIds(prisma, req.userId!);
     const recentRuns = await prisma.run.findMany({
-      where: { userId: { in: memberIds } },
+      where: { userId: { in: memberIds.filter((id) => !hidden.includes(id)) } },
       orderBy: { createdAt: 'desc' },
       take: 10,
       include: { user: { select: { id: true, name: true } }, course: { select: { id: true, name: true } } },
@@ -197,8 +199,12 @@ router.get('/:id/posts', async (req: AuthRequest, res: Response): Promise<void> 
     });
     if (!membership) { res.status(403).json({ message: '그룹 멤버만 볼 수 있습니다.' }); return; }
 
+    const [hidden, reported] = await Promise.all([
+      getHiddenUserIds(prisma, req.userId!),
+      getReportedIds(prisma, req.userId!, 'post'),
+    ]);
     const posts = await prisma.post.findMany({
-      where: { groupId: req.params.id },
+      where: { groupId: req.params.id, userId: { notIn: hidden }, id: { notIn: reported } },
       orderBy: { createdAt: 'desc' },
       include: {
         user: { select: { id: true, name: true } },

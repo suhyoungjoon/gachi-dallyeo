@@ -39,3 +39,8 @@ export async function removePendingRun(localId: string): Promise<void> {
     JSON.stringify(existing.filter((r) => r.localId !== localId))
   );
 }
+
+// 계정 삭제 시 기기에 남은 기록·미동기화 기록 삭제
+export async function clearLocalRunData(): Promise<void> {
+  await AsyncStorage.multiRemove([STORAGE_KEY, PENDING_KEY]);
+}
