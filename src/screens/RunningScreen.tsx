@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Alert, SafeAreaView,
+  View, Text, StyleSheet, TouchableOpacity, Alert,
   Platform, Modal, FlatList, ActivityIndicator, Dimensions, BackHandler,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import MapView, { Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
@@ -124,6 +126,8 @@ export default function RunningScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* 어두운 배경이라 상태바 글자를 밝게 */}
+      <StatusBar style="light" />
       <View style={styles.topBar}>
         {!started
           ? <TouchableOpacity onPress={leave}><Text style={styles.cancelText}>취소</Text></TouchableOpacity>
