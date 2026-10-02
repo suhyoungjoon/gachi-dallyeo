@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
@@ -23,6 +23,10 @@ import RunDetailScreen from './src/screens/RunDetailScreen';
 import ChallengeScreen from './src/screens/ChallengeScreen';
 import ChallengeDetailScreen from './src/screens/ChallengeDetailScreen';
 import GroupHomeScreen from './src/screens/GroupHomeScreen';
+import LegalScreen from './src/screens/LegalScreen';
+import AccountDeleteScreen from './src/screens/AccountDeleteScreen';
+import BlockedUsersScreen from './src/screens/BlockedUsersScreen';
+import { loadSession } from './src/tasks/runSession';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -35,11 +39,15 @@ export type RootStackParamList = {
   Challenge: undefined;
   ChallengeDetail: { challengeId: string };
   GroupHome: { groupId: string };
+  Legal: { doc: 'terms' | 'privacy' };
+  AccountDelete: undefined;
+  BlockedUsers: undefined;
 };
 
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
+  Legal: { doc: 'terms' | 'privacy' };
 };
 
 type TabParamList = {
@@ -88,14 +96,21 @@ function AuthNavigator() {
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Signup" component={SignupScreen} />
+      <AuthStack.Screen name="Legal" component={LegalScreen} />
     </AuthStack.Navigator>
   );
 }
 
 function AppNavigator() {
   const { user, isLoading } = useAuth();
+  // 달리던 중 앱이 종료됐다면 다시 열었을 때 바로 달리기 화면으로 복귀
+  const [hasActiveRun, setHasActiveRun] = useState<boolean | null>(null);
 
-  if (isLoading) {
+  useEffect(() => {
+    loadSession().then((s) => setHasActiveRun(!!s)).catch(() => setHasActiveRun(false));
+  }, []);
+
+  if (isLoading || hasActiveRun === null) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
         <ActivityIndicator size="large" color="#4CAF50" />
@@ -106,9 +121,9 @@ function AppNavigator() {
   if (!user) return <AuthNavigator />;
 
   return (
-    <RootStack.Navigator screenOptions={{ headerShown: false }}>
+    <RootStack.Navigator screenOptions={{ headerShown: false }} initialRouteName={hasActiveRun ? 'Running' : 'MainTabs'}>
       <RootStack.Screen name="MainTabs" component={MainTabs} />
-      <RootStack.Screen name="Running" component={RunningScreen} options={{ presentation: 'fullScreenModal' }} />
+      <RootStack.Screen name="Running" component={RunningScreen} options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
       <RootStack.Screen name="WritePost" component={WritePostScreen} options={{ presentation: 'modal' }} />
       <RootStack.Screen name="PostDetail" component={PostDetailScreen} />
       <RootStack.Screen name="CourseDetail" component={CourseDetailScreen} />
@@ -117,6 +132,9 @@ function AppNavigator() {
       <RootStack.Screen name="Challenge" component={ChallengeScreen} />
       <RootStack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
       <RootStack.Screen name="GroupHome" component={GroupHomeScreen} />
+      <RootStack.Screen name="Legal" component={LegalScreen} />
+      <RootStack.Screen name="AccountDelete" component={AccountDeleteScreen} />
+      <RootStack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
     </RootStack.Navigator>
   );
 }

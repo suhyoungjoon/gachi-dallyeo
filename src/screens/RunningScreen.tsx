@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert, SafeAreaView,
-  Platform, Modal, FlatList, ActivityIndicator, Dimensions,
+  Platform, Modal, FlatList, ActivityIndicator, Dimensions, BackHandler,
 } from 'react-native';
 import MapView, { Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -20,9 +20,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Running'>;
 
 export default function RunningScreen({ navigation }: Props) {
   const tracker = useRunningTracker();
-  const [started, setStarted] = useState(false);
+  const started = tracker.isRunning;
   const [healthKitReady, setHealthKitReady] = useState(false);
-  const startTimeRef = useRef<Date | null>(null);
   const mapRef = useRef<MapView>(null);
   const [courseModalVisible, setCourseModalVisible] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -56,35 +55,39 @@ export default function RunningScreen({ navigation }: Props) {
     finally { setLoadingCourses(false); }
   }, []);
 
+  // 앱 재실행으로 달리기 화면이 첫 화면인 경우엔 뒤로 갈 곳이 없으므로 메인 탭으로 교체
+  const leave = useCallback(() => {
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.replace('MainTabs');
+  }, [navigation]);
+
   const handleStart = async () => {
-    setStarted(true);
-    startTimeRef.current = new Date();
     await tracker.start();
   };
 
   const handlePauseResume = async () => {
     if (tracker.isPaused) await tracker.resume();
-    else tracker.pause();
+    else await tracker.pause();
   };
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     Alert.alert('달리기 종료', '현재 기록을 저장하고 종료할까요?', [
       { text: '취소', style: 'cancel' },
       {
         text: '저장하고 종료',
         onPress: async () => {
-          tracker.stop();
-          if (tracker.elapsed > 0) {
+          const summary = await tracker.stop();
+          if (summary && summary.elapsed > 0) {
             let healthData = null;
-            if (healthKitReady && startTimeRef.current) {
-              try { healthData = await getRunHealthData(startTimeRef.current, new Date()); } catch {}
+            if (healthKitReady) {
+              try { healthData = await getRunHealthData(summary.startedAt, new Date()); } catch {}
             }
             const payload = {
-              distance: tracker.distance,
-              duration: tracker.elapsed,
-              pace: tracker.pace,
-              calories: healthData?.activeCalories ?? tracker.calories,
-              coordinates: tracker.coordinates,
+              distance: summary.distance,
+              duration: summary.elapsed,
+              pace: summary.pace,
+              calories: healthData?.activeCalories ?? summary.calories,
+              coordinates: summary.coordinates,
               courseId: selectedCourse?.id,
               avgHeartRate: healthData?.avgHeartRate ?? undefined,
               maxHeartRate: healthData?.maxHeartRate ?? undefined,
@@ -101,23 +104,29 @@ export default function RunningScreen({ navigation }: Props) {
               Alert.alert('임시 저장됨', '네트워크 오류로 기록이 기기에 임시 저장되었습니다.\n기록 화면을 열면 자동으로 동기화됩니다.');
             }
           }
-          tracker.reset();
-          navigation.goBack();
+          leave();
         },
       },
       {
         text: '저장 없이 종료',
         style: 'destructive',
-        onPress: () => { tracker.stop(); tracker.reset(); navigation.goBack(); },
+        onPress: async () => { await tracker.discard(); leave(); },
       },
     ]);
-  };
+  }, [tracker.stop, tracker.discard, healthKitReady, selectedCourse, leave]);
+
+  // 달리는 중에는 안드로이드 뒤로가기로 화면을 벗어나지 않고 종료 확인을 띄움
+  useEffect(() => {
+    if (!started) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { handleStop(); return true; });
+    return () => sub.remove();
+  }, [started, handleStop]);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
         {!started
-          ? <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.cancelText}>취소</Text></TouchableOpacity>
+          ? <TouchableOpacity onPress={leave}><Text style={styles.cancelText}>취소</Text></TouchableOpacity>
           : <View />}
         <Text style={styles.topTitle}>달리기</Text>
         <View style={{ width: 40 }} />

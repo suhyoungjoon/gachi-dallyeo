@@ -5,6 +5,9 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { getPostDetail, addComment, toggleLike, deletePost } from '../api/posts';
 import { useAuth } from '../context/AuthContext';
+import { blockUser } from '../api/users';
+import { ReportTargetType } from '../api/reports';
+import ReportModal from '../components/ReportModal';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PostDetail'>;
 
@@ -32,6 +35,7 @@ export default function PostDetailScreen({ navigation, route }: Props) {
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [reportTarget, setReportTarget] = useState<{ type: ReportTargetType; id: string } | null>(null);
 
   useEffect(() => {
     getPostDetail(postId)
@@ -72,6 +76,37 @@ export default function PostDetailScreen({ navigation, route }: Props) {
     ]);
   };
 
+  // 신고한 콘텐츠는 내 화면에서 바로 숨김 (서버도 이후 조회부터 제외)
+  const handleReported = (target: { type: ReportTargetType; id: string }) => {
+    if (target.type === 'post') navigation.goBack();
+    else setData((prev: any) => ({ ...prev, comments: prev.comments.filter((c: any) => c.id !== target.id) }));
+  };
+
+  const handleBlock = (author: { id: string; name: string }) => {
+    Alert.alert('사용자 차단', `${author.name}님을 차단할까요?\n서로의 게시글·댓글·달리기 기록이 보이지 않고, 팔로우도 해제됩니다.`, [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '차단', style: 'destructive', onPress: async () => {
+          try {
+            await blockUser(author.id);
+            if (data?.user?.id === author.id) { navigation.goBack(); return; }
+            setData((prev: any) => ({ ...prev, comments: prev.comments.filter((c: any) => c.user.id !== author.id) }));
+          } catch {
+            Alert.alert('오류', '차단에 실패했습니다.');
+          }
+        },
+      },
+    ]);
+  };
+
+  const openMenu = (type: 'post' | 'comment', id: string, author: { id: string; name: string }) => {
+    Alert.alert(type === 'post' ? '게시글' : '댓글', undefined, [
+      { text: '신고하기', onPress: () => setReportTarget({ type, id }) },
+      { text: `${author.name}님 차단`, style: 'destructive', onPress: () => handleBlock(author) },
+      { text: '취소', style: 'cancel' },
+    ]);
+  };
+
   if (loading) return <View style={styles.center}><ActivityIndicator color="#4CAF50" size="large" /></View>;
 
   return (
@@ -80,9 +115,13 @@ export default function PostDetailScreen({ navigation, route }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← 뒤로</Text>
         </TouchableOpacity>
-        {data?.userId === user?.id && (
+        {data?.userId === user?.id ? (
           <TouchableOpacity onPress={handleDelete}>
             <Text style={styles.deleteText}>삭제</Text>
+          </TouchableOpacity>
+        ) : data && (
+          <TouchableOpacity onPress={() => openMenu('post', data.id, data.user)} hitSlop={10} accessibilityLabel="게시글 더보기">
+            <Text style={styles.moreText}>⋯</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -110,7 +149,14 @@ export default function PostDetailScreen({ navigation, route }: Props) {
             <View key={c.id} style={styles.commentItem}>
               <View style={styles.commentHeader}>
                 <Text style={styles.commentAuthor}>{c.user.name}</Text>
-                <Text style={styles.commentDate}>{timeAgo(c.createdAt)}</Text>
+                <View style={styles.commentMeta}>
+                  <Text style={styles.commentDate}>{timeAgo(c.createdAt)}</Text>
+                  {c.user.id !== user?.id && (
+                    <TouchableOpacity onPress={() => openMenu('comment', c.id, c.user)} hitSlop={10} accessibilityLabel="댓글 더보기">
+                      <Text style={styles.commentMore}>⋯</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
               <Text style={styles.commentContent}>{c.content}</Text>
             </View>
@@ -131,6 +177,7 @@ export default function PostDetailScreen({ navigation, route }: Props) {
           <Text style={styles.commentSubmitText}>{submitting ? '...' : '등록'}</Text>
         </TouchableOpacity>
       </View>
+      <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onReported={handleReported} />
     </KeyboardAvoidingView>
   );
 }
@@ -141,6 +188,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   backText: { fontSize: 16, color: '#4CAF50' },
   deleteText: { fontSize: 15, color: '#FF3B30' },
+  moreText: { fontSize: 22, color: '#888', fontWeight: '700' },
+  commentMeta: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  commentMore: { fontSize: 16, color: '#AAA', fontWeight: '700' },
   body: { flex: 1, padding: 16 },
   categoryBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginBottom: 10 },
   categoryBadgeText: { fontSize: 13, fontWeight: '600' },

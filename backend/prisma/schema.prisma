@@ -8,17 +8,19 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  password  String
-  name      String
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  runs      Run[]
-  posts     Post[]
-  comments  Comment[]
-  likes     PostLike[]
-  courses   Course[]
+  id                      String                 @id @default(cuid())
+  email                   String                 @unique
+  password                String
+  name                    String
+  termsAgreedAt           DateTime?
+  privacyAgreedAt         DateTime?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  runs                    Run[]
+  posts                   Post[]
+  comments                Comment[]
+  likes                   PostLike[]
+  courses                 Course[]
   followers               Follow[]               @relation("following")
   following               Follow[]               @relation("follower")
   goal                    Goal?
@@ -26,23 +28,26 @@ model User {
   challengeParticipations ChallengeParticipant[]
   createdGroups           Group[]
   groupMemberships        GroupMember[]
+  reports                 Report[]
+  blocking                Block[]                @relation("blocker")
+  blockedBy               Block[]                @relation("blocked")
 }
 
 model Run {
-  id             String   @id @default(cuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  distance       Float
-  duration       Int
-  pace           String
-  calories       Int
-  coordinates    Json
-  avgHeartRate   Int?
-  maxHeartRate   Int?
-  minHeartRate   Int?
-  courseId       String?
-  course         Course?  @relation(fields: [courseId], references: [id])
-  createdAt      DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  distance     Float
+  duration     Int
+  pace         String
+  calories     Int
+  coordinates  Json
+  avgHeartRate Int?
+  maxHeartRate Int?
+  minHeartRate Int?
+  courseId     String?
+  course       Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
 }
 
 model Course {
@@ -52,7 +57,7 @@ model Course {
   description String?
   coordinates Json?
   createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
   runs        Run[]
   createdAt   DateTime @default(now())
 }
@@ -60,12 +65,12 @@ model Course {
 model Post {
   id        String     @id @default(cuid())
   userId    String
-  user      User       @relation(fields: [userId], references: [id])
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   category  String
   title     String
   content   String
   groupId   String?
-  group     Group?     @relation(fields: [groupId], references: [id])
+  group     Group?     @relation(fields: [groupId], references: [id], onDelete: Cascade)
   comments  Comment[]
   likes     PostLike[]
   createdAt DateTime   @default(now())
@@ -79,7 +84,7 @@ model Group {
   isPublic    Boolean       @default(true)
   inviteCode  String        @unique @default(cuid())
   createdById String
-  createdBy   User          @relation(fields: [createdById], references: [id])
+  createdBy   User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
   members     GroupMember[]
   posts       Post[]
   createdAt   DateTime      @default(now())
@@ -90,7 +95,7 @@ model GroupMember {
   groupId  String
   group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   userId   String
-  user     User     @relation(fields: [userId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   role     String   @default("member")
   joinedAt DateTime @default(now())
 
@@ -102,7 +107,7 @@ model Comment {
   postId    String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   content   String
   createdAt DateTime @default(now())
 }
@@ -112,7 +117,7 @@ model PostLike {
   postId    String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   @@unique([postId, userId])
@@ -121,21 +126,21 @@ model PostLike {
 model Follow {
   id          String   @id @default(cuid())
   followerId  String
-  follower    User     @relation("follower", fields: [followerId], references: [id])
+  follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
   followingId String
-  following   User     @relation("following", fields: [followingId], references: [id])
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
 
   @@unique([followerId, followingId])
 }
 
 model Goal {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id])
-  weeklyDistance Float
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weeklyDistance  Float
   monthlyDistance Float
-  updatedAt      DateTime @updatedAt
+  updatedAt       DateTime @updatedAt
 }
 
 model Challenge {
@@ -145,7 +150,7 @@ model Challenge {
   startDate      DateTime
   endDate        DateTime
   createdById    String
-  createdBy      User                   @relation(fields: [createdById], references: [id])
+  createdBy      User                   @relation(fields: [createdById], references: [id], onDelete: Cascade)
   participants   ChallengeParticipant[]
   createdAt      DateTime               @default(now())
 }
@@ -155,8 +160,35 @@ model ChallengeParticipant {
   challengeId String
   challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   joinedAt    DateTime  @default(now())
 
   @@unique([challengeId, userId])
+}
+
+// 신고 (게시글/댓글/사용자). 운영자가 status를 보고 24시간 내 조치
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType String // post | comment | user
+  targetId   String
+  reason     String
+  detail     String?
+  status     String   @default("pending") // pending | resolved | dismissed
+  createdAt  DateTime @default(now())
+
+  @@unique([reporterId, targetType, targetId])
+  @@index([targetType, targetId])
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
 }

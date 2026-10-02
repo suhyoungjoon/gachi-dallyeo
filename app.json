@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "gachi-dallyeo",
+    "name": "같이달려",
     "slug": "gachi-dallyeo",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,33 +13,63 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
+      "bundleIdentifier": "com.togetherrun.app",
+      "buildNumber": "1",
+      "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "달리기 경로와 거리를 측정하기 위해 위치 정보가 필요합니다.",
-        "NSLocationAlwaysUsageDescription": "달리기 중 백그라운드에서도 경로를 기록하기 위해 위치 정보가 필요합니다."
-      },
-      "bundleIdentifier": "com.anonymous.gachidallyeo"
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.togetherrun.app",
+      "versionCode": 1,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ],
+      "blockedPermissions": [
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.gachidallyeo"
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "같이달려는 Face ID를 사용하지 않습니다."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "달리기 경로와 거리를 측정하기 위해 위치 정보가 필요합니다. 달리기 중에는 화면이 꺼져도 경로를 계속 기록합니다.",
+          "locationAlwaysAndWhenInUsePermission": "달리기 중 화면이 꺼지거나 다른 앱을 사용할 때도 경로와 거리를 기록하기 위해 위치 정보가 필요합니다.",
+          "locationAlwaysPermission": "달리기 중 화면이 꺼지거나 다른 앱을 사용할 때도 경로와 거리를 기록하기 위해 위치 정보가 필요합니다.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "react-native-health",
+        {
+          "healthSharePermission": "달리기 기록에 심박수와 활동 칼로리를 함께 표시하기 위해 건강 데이터를 읽습니다.",
+          "healthUpdatePermission": "같이달려는 건강 앱에 데이터를 기록하지 않습니다."
+        }
+      ],
+      "./plugins/withoutBackgroundFetch"
     ]
   }
 }

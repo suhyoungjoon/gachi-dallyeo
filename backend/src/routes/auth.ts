@@ -10,10 +10,14 @@ const prisma = new PrismaClient();
 // 회원가입
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, agreeTerms, agreePrivacy, agreeAge } = req.body;
 
     if (!email || !password || !name) {
       res.status(400).json({ message: '이름, 이메일, 비밀번호를 모두 입력해주세요.' });
+      return;
+    }
+    if (agreeTerms !== true || agreePrivacy !== true || agreeAge !== true) {
+      res.status(400).json({ message: '필수 약관에 모두 동의해주세요.' });
       return;
     }
 
@@ -25,7 +29,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 
     const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { email, password: hashed, name },
+      data: { email, password: hashed, name, termsAgreedAt: new Date(), privacyAgreedAt: new Date() },
       select: { id: true, email: true, name: true, createdAt: true },
     });
 

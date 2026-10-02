@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import client from '../api/client';
+import { discardSession } from '../tasks/runSession';
+import { clearLocalRunData } from '../storage/runStorage';
 
 interface User {
   id: string;
@@ -13,8 +15,15 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, agreements: Agreements) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
+}
+
+export interface Agreements {
+  agreeTerms: boolean;
+  agreePrivacy: boolean;
+  agreeAge: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -47,19 +56,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
   }
 
-  async function register(name: string, email: string, password: string) {
-    const { data } = await client.post('/api/auth/register', { name, email, password });
+  async function register(name: string, email: string, password: string, agreements: Agreements) {
+    const { data } = await client.post('/api/auth/register', { name, email, password, ...agreements });
     await SecureStore.setItemAsync('auth_token', data.token);
     setUser(data.user);
   }
 
   async function logout() {
+    await discardSession().catch(() => {});
     await SecureStore.deleteItemAsync('auth_token');
     setUser(null);
   }
 
+  // 서버에서 계정을 영구 삭제한 뒤 기기에 남은 토큰·임시 기록도 지운다
+  async function deleteAccount(password: string) {
+    await client.delete('/api/users/me', { data: { password } });
+    await clearLocalRunData().catch(() => {});
+    await logout();
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );

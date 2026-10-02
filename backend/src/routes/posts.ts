@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, AuthRequest } from '../middleware/authenticate';
+import { getHiddenUserIds, getReportedIds } from '../lib/blocks';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -11,8 +12,17 @@ router.use(authenticate);
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const category = req.query.category as string | undefined;
+    const [hidden, reported] = await Promise.all([
+      getHiddenUserIds(prisma, req.userId!),
+      getReportedIds(prisma, req.userId!, 'post'),
+    ]);
     const posts = await prisma.post.findMany({
-      where: { groupId: null, ...(category ? { category } : {}) },
+      where: {
+        groupId: null,
+        userId: { notIn: hidden },
+        id: { notIn: reported },
+        ...(category ? { category } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: 30,
       include: {
@@ -49,18 +59,23 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
 // 게시글 상세 + 댓글
 router.get('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const [hidden, reportedComments] = await Promise.all([
+      getHiddenUserIds(prisma, req.userId!),
+      getReportedIds(prisma, req.userId!, 'comment'),
+    ]);
     const post = await prisma.post.findUnique({
       where: { id: req.params.id },
       include: {
         user: { select: { id: true, name: true } },
         comments: {
+          where: { userId: { notIn: hidden }, id: { notIn: reportedComments } },
           orderBy: { createdAt: 'asc' },
           include: { user: { select: { id: true, name: true } } },
         },
         _count: { select: { likes: true } },
       },
     });
-    if (!post) { res.status(404).json({ message: '게시글을 찾을 수 없습니다.' }); return; }
+    if (!post || hidden.includes(post.userId)) { res.status(404).json({ message: '게시글을 찾을 수 없습니다.' }); return; }
 
     const isLiked = !!(await prisma.postLike.findUnique({
       where: { postId_userId: { postId: req.params.id, userId: req.userId! } },
@@ -77,6 +92,10 @@ router.post('/:id/comments', async (req: AuthRequest, res: Response): Promise<vo
   try {
     const { content } = req.body;
     if (!content?.trim()) { res.status(400).json({ message: '댓글 내용을 입력해주세요.' }); return; }
+    const post = await prisma.post.findUnique({ where: { id: req.params.id }, select: { userId: true } });
+    if (!post) { res.status(404).json({ message: '게시글을 찾을 수 없습니다.' }); return; }
+    const hidden = await getHiddenUserIds(prisma, req.userId!);
+    if (hidden.includes(post.userId)) { res.status(403).json({ message: '차단 관계인 사용자의 게시글에는 댓글을 달 수 없습니다.' }); return; }
     const comment = await prisma.comment.create({
       data: { postId: req.params.id, userId: req.userId!, content: content.trim() },
       include: { user: { select: { id: true, name: true } } },

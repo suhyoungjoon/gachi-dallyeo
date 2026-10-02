@@ -17,3 +17,12 @@ export const unfollowUser = (id: string) =>
 
 export const searchUsers = (q: string) =>
   client.get('/api/users/search', { params: { q } }).then((r) => r.data.users);
+
+export const blockUser = (id: string) =>
+  client.post(`/api/users/${id}/block`).then((r) => r.data);
+
+export const unblockUser = (id: string) =>
+  client.delete(`/api/users/${id}/block`).then((r) => r.data);
+
+export const getBlockedUsers = () =>
+  client.get('/api/users/blocks').then((r) => r.data.users as { id: string; name: string; blockedAt: string }[]);
