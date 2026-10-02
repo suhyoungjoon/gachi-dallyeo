@@ -55,6 +55,10 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ message: '이메일 또는 비밀번호가 올바르지 않습니다.' });
       return;
     }
+    if (user.suspendedAt) {
+      res.status(403).json({ message: '운영 정책 위반으로 이용이 정지된 계정입니다.', suspended: true });
+      return;
+    }
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
     const { password: _, ...safeUser } = user;

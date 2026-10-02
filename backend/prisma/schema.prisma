@@ -14,6 +14,9 @@ model User {
   name                    String
   termsAgreedAt           DateTime?
   privacyAgreedAt         DateTime?
+  role                    String                 @default("user") // user | admin
+  suspendedAt             DateTime?
+  suspendReason           String?
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
   runs                    Run[]
@@ -168,18 +171,23 @@ model ChallengeParticipant {
 
 // 신고 (게시글/댓글/사용자). 운영자가 status를 보고 24시간 내 조치
 model Report {
-  id         String   @id @default(cuid())
-  reporterId String
-  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
-  targetType String // post | comment | user
-  targetId   String
-  reason     String
-  detail     String?
-  status     String   @default("pending") // pending | resolved | dismissed
-  createdAt  DateTime @default(now())
+  id           String    @id @default(cuid())
+  reporterId   String
+  reporter     User      @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType   String // post | comment | user
+  targetId     String
+  reason       String
+  detail       String?
+  status       String    @default("pending") // pending | resolved | dismissed
+  action       String? // 처리 결과: dismiss | remove | remove_and_suspend
+  note         String?
+  resolvedAt   DateTime?
+  resolvedById String? // 처리한 관리자 id (관리자 계정이 삭제돼도 기록은 남김)
+  createdAt    DateTime  @default(now())
 
   @@unique([reporterId, targetType, targetId])
   @@index([targetType, targetId])
+  @@index([status, createdAt])
 }
 
 model Block {

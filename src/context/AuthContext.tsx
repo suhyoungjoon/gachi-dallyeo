@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import client from '../api/client';
 import { discardSession } from '../tasks/runSession';
@@ -34,6 +35,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     restoreSession();
+  }, []);
+
+  // 사용 중에 운영자가 계정을 정지하면 다음 요청에서 403(suspended)이 오므로 안내 후 로그아웃
+  useEffect(() => {
+    const id = client.interceptors.response.use(undefined, async (error) => {
+      if (error?.response?.status === 403 && error.response.data?.suspended) {
+        const token = await SecureStore.getItemAsync('auth_token');
+        if (token) {
+          await logout();
+          Alert.alert('이용 정지', error.response.data.message);
+        }
+      }
+      return Promise.reject(error);
+    });
+    return () => client.interceptors.response.eject(id);
   }, []);
 
   async function restoreSession() {
